@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Genesys Cloud Token Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #FF451A;
+      --orange-tint: #FFECE9;
+      --navy: #152550;
+      --azure: #2243A2;
+      --arctic: #B1CADA;
+      --arctic-soft: #E9F0F5;
+      --nimbus: #F9F8F5;
+      --nimbus-shade: #F1EFEA;
+      --muted: #5A6485;
+      --line: #E3E0D8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--nimbus);
+      color: var(--navy);
+      font-family: "Roboto", Arial, sans-serif;
+      font-weight: 400;
+    }
+    .wrap { max-width: 1380px; margin: 0 auto; padding: 24px; }
+    .hero, .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(21, 37, 80, 0.06);
+    }
+    .hero {
+      padding: 28px 28px 24px;
+      margin-bottom: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -60px; top: -80px;
+      width: 340px; height: 220px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #B1CADA 0%, #F9F8F5 100%);
+      transform: rotate(-12deg);
+      pointer-events: none;
+    }
+    .hero > * { position: relative; z-index: 1; }
+    .eyebrow {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--orange);
+    }
+    .hero h1 {
+      margin: 0;
+      font-size: 36px;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      font-weight: 500;
+      color: var(--navy);
+    }
+    .hero .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+    .main { display: grid; gap: 18px; }
+    .card h2 {
+      margin: 0;
+      padding: 14px 18px;
+      font-size: 19px;
+      font-weight: 600;
+      background: var(--navy);
+      color: #fff;
+      border-radius: 18px 18px 0 0;
+      border-bottom: 3px solid var(--orange);
+    }
+    .section { padding: 16px 18px 18px; }
+    .step {
+      margin: 0 0 10px;
+      padding: 9px 11px;
+      border-left: 4px solid var(--orange);
+      background: var(--nimbus-shade);
+      border-radius: 6px 10px 10px 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--navy);
+    }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+    th { background: var(--nimbus-shade); text-align: left; font-weight: 600; }
+    td.value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--navy); }
+    td.note { color: var(--muted); font-size: 12px; }
+    tr.total td { background: var(--arctic-soft); font-weight: 700; }
+    label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+    input, select, button, textarea { font: inherit; }
+    input[type="number"], input[type="text"], select, textarea {
+      width: 100%;
+      border: 1px solid var(--arctic);
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: #fff;
+      color: var(--navy);
+    }
+    input:focus, select:focus {
+      outline: 2px solid var(--azure);
+      outline-offset: 1px;
+    }
+    input.user-input {
+      background: var(--arctic-soft);
+      border-color: var(--azure);
+      font-weight: 700;
+      color: var(--azure);
+    }
+    .grid-2, .grid-3 { display: grid; gap: 12px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .toolbar button, .toolbar label.filebtn {
+      border: 2px solid var(--navy);
+      background: #fff;
+      color: var(--navy);
+      border-radius: 999px;
+      padding: 9px 20px;
+      margin: 0;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background .15s, color .15s;
+    }
+    .toolbar button:hover, .toolbar label.filebtn:hover { background: var(--navy); color: #fff; }
+    .toolbar button#saveScenarioBtn { background: var(--orange); border-color: var(--orange); color: #fff; }
+    .toolbar button#saveScenarioBtn:hover { background: #E03A12; border-color: #E03A12; }
+    .toolbar input[type="file"] { display: none; }
+    .summary { position: sticky; top: 18px; display: grid; gap: 16px; }
+    .metric { display: grid; gap: 6px; }
+    .metric .label { color: var(--muted); font-size: 13px; font-weight: 500; }
+    .metric .value { font-size: 32px; font-weight: 700; color: var(--orange); letter-spacing: -0.01em; }
+    .mini { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--arctic-soft);
+      border: 1px solid var(--arctic);
+      color: var(--navy);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      margin: 0 6px 6px 0;
+    }
+    .small-table td:first-child { width: 62%; }
+    .foot { color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 12px; }
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 1fr; }
+      .summary { position: static; }
+    }
+    @media (max-width: 720px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 28px; }
+    }
+
+    #printReport { display: none; }
+    @media print {
+      @page { size: letter; margin: 0.55in; }
+      html, body { background: #fff !important; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .wrap { display: none !important; }
+      #printReport { display: block; color: var(--navy); font-family: "Roboto", Arial, sans-serif; font-size: 11pt; }
+      #printReport .pr-head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid var(--orange); padding-bottom: 10px; margin-bottom: 14px; }
+      #printReport .pr-eyebrow { font-size: 9pt; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--orange); margin: 0 0 4px; }
+      #printReport h1 { font-size: 22pt; line-height: 1.1; font-weight: 500; margin: 0; color: var(--navy); }
+      #printReport .pr-meta { text-align: right; font-size: 10pt; line-height: 1.5; color: var(--muted); }
+      #printReport .pr-meta strong { color: var(--navy); }
+      #printReport h2 { font-size: 12pt; font-weight: 600; margin: 16px 0 6px; padding: 5px 10px; background: var(--navy); color: #fff; border-radius: 4px; }
+      #printReport table { width: 100%; border-collapse: collapse; table-layout: auto; }
+      #printReport th, #printReport td { border: 1px solid var(--line); padding: 5px 8px; font-size: 10pt; text-align: left; }
+      #printReport th { background: var(--nimbus-shade); font-weight: 600; }
+      #printReport td.num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+      #printReport td.dim { color: var(--muted); font-size: 9pt; }
+      #printReport tr { page-break-inside: avoid; }
+      #printReport tr.sub td { background: var(--arctic-soft); font-weight: 700; }
+      #printReport .pr-total { margin-top: 14px; border: 2px solid var(--navy); border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; gap: 20px; page-break-inside: avoid; }
+      #printReport .pr-total div { flex: 1; }
+      #printReport .pr-total .lbl { font-size: 9pt; color: var(--muted); font-weight: 500; }
+      #printReport .pr-total .big { font-size: 20pt; font-weight: 700; color: var(--orange); line-height: 1.2; }
+      #printReport .pr-note { margin-top: 14px; font-size: 8.5pt; line-height: 1.5; color: var(--muted); }
+      #printReport .pr-sign { margin-top: 22px; display: flex; gap: 30px; page-break-inside: avoid; }
+      #printReport .pr-sign div { flex: 1; border-top: 1px solid var(--navy); padding-top: 4px; font-size: 9pt; color: var(--muted); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <p class="eyebrow">AI-Powered Experience Orchestration</p>
+      <h1>Genesys Cloud&trade; Token Calculator</h1>
+      <div class="row toolbar">
+        <button id="printBtn">Print customer form</button>
+        <button id="saveScenarioBtn">Save scenario</button>
+        <button id="downloadScenarioBtn">Download JSON</button>
+        <label class="filebtn">Load JSON <input id="uploadScenarioInput" type="file" accept="application/json"></label>
+        <button id="resetBtn">Reset defaults</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="main">
+        <div class="card">
+          <h2>IVR Replacement Token Calculator</h2>
+          <div class="section">
+            <div class="step">Step 1: Adjust your inputs</div>
+            <div class="grid-3" style="margin-bottom: 14px;">
+              <div>
+                <label for="ivrCallsPerMonth">IVR calls (interactions) per month</label>
+                <input class="user-input" id="ivrCallsPerMonth" type="number" min="0" step="any">
+              </div>
+              <div>
+                <label for="ivrMinutesPerCall">Average minutes in IVR per call</label>
+                <input class="user-input" id="ivrMinutesPerCall" type="number" min="0" step="any">
+              </div>
+              <div>
+                <label for="ivrReplacePct">Percentage of calls to deflect to bots</label>
+                <input class="user-input" id="ivrReplacePct" type="number" min="0" max="100" step="any">
+              </div>
+            </div>
+            <table>
+              <tr><td>Total IVR minutes per month</td><td class="value" id="ivrTotalMinutes"></td><td class="note">Calls multiplied by average minutes per call</td></tr>
+              <tr><td>Calls to deflect</td><td class="value" id="ivrCallsToReplace"></td><td class="note">Calls multiplied by deflection percentage</td></tr>
+              <tr><td>IVR minutes to deflect</td><td class="value" id="ivrMinutesToReplace"></td><td class="note">Calls to deflect multiplied by average minutes per call</td></tr>
+            </table>
+
+            <div class="step" style="margin-top: 16px;">Step 2: Apply product mix (total cannot exceed 100% of deflected calls)</div>
+            <table>
+              <tr><th>Model</th><th>Percent of deflected calls</th><th>Required tokens</th><th>Metering</th></tr>
+              <tr>
+                <td>Voice Bot</td>
+                <td><input class="user-input" id="ivrVoiceBotPct" type="number" min="0" max="100" step="any"></td>
+                <td class="value" id="ivrVoiceBotTokens"></td>
+                <td class="note">17 minutes per token; each call rounded up to the next 15 seconds</td>
+              </tr>
+              <tr>
+                <td>Virtual Agent</td>
+                <td><input class="user-input" id="ivrVirtualAgentPct" type="number" min="0" max="100" step="any"></td>
+                <td class="value" id="ivrVirtualAgentTokens"></td>
+                <td class="note">0.5 tokens per interaction</td>
+              </tr>
+              <tr>
+                <td>Agentic Virtual Agent</td>
+                <td><input class="user-input" id="ivrAgenticVirtualAgentPct" type="number" min="0" max="100" step="any"></td>
+                <td class="value" id="ivrAgenticVirtualAgentTokens"></td>
+                <td class="note">1.2 tokens per interaction</td>
+              </tr>
+              <tr><td>Unallocated (not deflected to a bot)</td><td class="value" id="ivrMixRemaining"></td><td class="value"></td><td class="note">Remaining % of deflected calls</td></tr>
+              <tr class="total"><td colspan="2">Total IVR replacement tokens</td><td class="value" id="ivrTotalTokens"></td><td></td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Digital Chat Replacement Token Calculator</h2>
+          <div class="section">
+            <div class="step">Step 1: Adjust your inputs</div>
+            <div class="grid-3" style="margin-bottom: 14px;">
+              <div>
+                <label for="chatSessionsPerMonth">Total chat sessions per month</label>
+                <input class="user-input" id="chatSessionsPerMonth" type="number" min="0" step="any">
+              </div>
+              <div>
+                <label for="chatAverageLength">Average chat length in lines or turns</label>
+                <input class="user-input" id="chatAverageLength" type="number" min="0" step="any">
+              </div>
+              <div>
+                <label for="chatReplacePct">Percentage of chats to replace</label>
+                <input class="user-input" id="chatReplacePct" type="number" min="0" max="100" step="any">
+              </div>
+            </div>
+            <table>
+              <tr><td>Chats to replace</td><td class="value" id="chatToReplace"></td><td class="note">Sessions multiplied by replacement percentage</td></tr>
+              <tr><td>Total turns replaced</td><td class="value" id="chatTurnsToReplace"></td><td class="note">For planning context only</td></tr>
+            </table>
+
+            <div class="step" style="margin-top: 16px;">Step 2: Apply product mix (total cannot exceed 100% of replaced chats)</div>
+            <table>
+              <tr><th>Model</th><th>Percent of replaced chats</th><th>Required tokens</th><th>Metering</th></tr>
+              <tr>
+                <td>Digital Bot</td>
+                <td><input class="user-input" id="chatDigitalBotPct" type="number" min="0" max="100" step="any"></td>
+                <td class="value" id="chatDigitalBotTokens"></td>
+                <td class="note">51 sessions per token</td>
+              </tr>
+              <tr>
+                <td>Virtual Agent</td>
+                <td><input class="user-input" id="chatVirtualAgentPct" type="number" min="0" max="100" step="any"></td>
+                <td class="value" id="chatVirtualAgentTokens"></td>
+                <td class="note">0.5 tokens per interaction</td>
+              </tr>
+              <tr>
+                <td>Agentic Virtual Agent</td>
+                <td><input class="user-input" id="chatAgenticVirtualAgentPct" type="number" min="0" max="100" step="any"></td>
+                <td class="value" id="chatAgenticVirtualAgentTokens"></td>
+                <td class="note">1.2 tokens per interaction</td>
+              </tr>
+              <tr><td>Unallocated (not replaced by a bot)</td><td class="value" id="chatMixRemaining"></td><td class="value"></td><td class="note">Remaining % of replaced chats</td></tr>
+              <tr class="total"><td colspan="2">Total digital replacement tokens</td><td class="value" id="chatTotalTokens"></td><td></td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Copilot, Insights, and Predictive</h2>
+          <div class="section">
+            <div class="grid-2">
+              <div>
+                <div class="step">Copilot</div>
+                <table>
+                  <tr><td>Copilot named users</td><td><input class="user-input" id="copilotNamedUsers" type="number" min="0" step="any"></td><td class="value" id="copilotNamedTokens"></td></tr>
+                  <tr><td>Copilot concurrent users</td><td><input class="user-input" id="copilotConcurrentUsers" type="number" min="0" step="any"></td><td class="value" id="copilotConcurrentTokens"></td></tr>
+                  <tr class="total"><td colspan="2">Copilot total tokens</td><td class="value" id="copilotTotalTokens"></td></tr>
+                </table>
+              </div>
+              <div>
+                <div class="step">Predictive</div>
+                <table>
+                  <tr><td>Predictive Engagement events</td><td><input class="user-input" id="predictiveEvents" type="number" min="0" step="any"></td><td class="value" id="predictiveEngagementTokens"></td></tr>
+                  <tr><td>Predictive routing routes</td><td><input class="user-input" id="predictiveRoutes" type="number" min="0" step="any"></td><td class="value" id="predictiveRoutingTokens"></td></tr>
+                  <tr class="total"><td colspan="2">Predictive total tokens</td><td class="value" id="predictiveTotalTokens"></td></tr>
+                </table>
+              </div>
+            </div>
+
+            <div class="step" style="margin-top: 16px;">Insights</div>
+            <table>
+              <tr><th>Product</th><th>Percent of eligible interactions</th><th>Required tokens</th><th>Metering</th></tr>
+              <tr><td>AI Summary</td><td><input class="user-input" id="insightsSummaryPct" type="number" min="0" step="any"></td><td class="value" id="insightsSummaryTokens"></td><td class="note">50 summaries per token</td></tr>
+              <tr><td>AI Insights</td><td><input class="user-input" id="insightsInsightsPct" type="number" min="0" step="any"></td><td class="value" id="insightsInsightsTokens"></td><td class="note">50 insights per token</td></tr>
+              <tr><td>AI Scoring</td><td><input class="user-input" id="insightsScoringPct" type="number" min="0" step="any"></td><td class="value" id="insightsScoringTokens"></td><td class="note">20 evaluations per token</td></tr>
+              <tr><td>AI Translate</td><td><input class="user-input" id="insightsTranslatePct" type="number" min="0" step="any"></td><td class="value" id="insightsTranslateTokens"></td><td class="note">2 translations per token</td></tr>
+              <tr class="total"><td colspan="2">Insights total tokens</td><td class="value" id="insightsTotalTokens"></td><td></td></tr>
+            </table>
+            <div class="foot">
+              Notes: Predictive Engagement is priced at no token charge. Supervisor Copilot summaries and insights do not consume tokens when Agent Copilot is enabled at the same time.
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Additional AI Experience Products</h2>
+          <div class="section">
+            <div class="grid-2">
+              <div>
+                <div class="step">Speech and Text Analytics</div>
+                <table>
+                  <tr><td>Named users</td><td><input class="user-input" id="staNamedUsers" type="number" min="0" step="any"></td><td class="value" id="staNamedTokens"></td></tr>
+                  <tr><td>Concurrent users</td><td><input class="user-input" id="staConcurrentUsers" type="number" min="0" step="any"></td><td class="value" id="staConcurrentTokens"></td></tr>
+                  <tr class="total"><td colspan="2">Speech and Text Analytics total</td><td class="value" id="staTotalTokens"></td></tr>
+                </table>
+              </div>
+              <div>
+                <div class="step">Genesys Cloud Copilot</div>
+                <table>
+                  <tr><td>AI actions per month</td><td><input class="user-input" id="gcCopilotActions" type="number" min="0" step="any"></td><td class="value" id="gcCopilotTokens"></td></tr>
+                  <tr class="total"><td colspan="2">Genesys Cloud Copilot total</td><td class="value" id="gcCopilotTotalTokens"></td></tr>
+                </table>
+              </div>
+            </div>
+            <div class="step" style="margin-top: 16px;">Messaging and Social</div>
+            <table>
+              <tr><th>Product</th><th>Volume per month</th><th>Required tokens</th><th>Metering</th></tr>
+              <tr><td>Direct messaging (Apple, Facebook, Instagram, WhatsApp, X)</td><td><input class="user-input" id="messagingVolume" type="number" min="0" step="any"></td><td class="value" id="messagingTokens"></td><td class="note">400 inbound or outbound messages per token</td></tr>
+              <tr><td>Social post ingestions</td><td><input class="user-input" id="socialPosts" type="number" min="0" step="any"></td><td class="value" id="socialPostTokens"></td><td class="note">400 posts per channel per token</td></tr>
+              <tr><td>Social post responses</td><td><input class="user-input" id="socialResponses" type="number" min="0" step="any"></td><td class="value" id="socialResponseTokens"></td><td class="note">400 outbound messages per channel per token</td></tr>
+              <tr class="total"><td colspan="2">Messaging and Social total</td><td class="value" id="messagingTotalTokens"></td><td></td></tr>
+            </table>
+            <div class="foot">
+              Notes: Other charges apply for WhatsApp and X. Enter social volumes per channel and sum channels. Source: Genesys Cloud tokens model (help.genesys.cloud).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary">
+        <div class="card">
+          <h2>Summary</h2>
+          <div class="section">
+            <div class="metric">
+              <div class="label">Gross required tokens</div>
+              <div class="value" id="grossTotal"></div>
+            </div>
+            <div class="grid-2" style="margin-top: 14px;">
+              <div>
+                <label for="freeTokenMode">Free allocation mode</label>
+                <select id="freeTokenMode">
+                  <option value="none">No free allocation</option>
+                  <option value="named">Named org (250 tokens)</option>
+                  <option value="concurrent">Concurrent org (350 tokens)</option>
+                </select>
+              </div>
+              <div>
+                <label>Estimated month-to-month cost</label>
+                <div class="metric"><div class="value" id="estimatedMonthlyUsd"></div></div>
+              </div>
+            </div>
+            <table class="small-table" style="margin-top: 12px;">
+              <tr><td>IVR replacement</td><td class="value" id="sumIvr"></td></tr>
+              <tr><td>Digital replacement</td><td class="value" id="sumChat"></td></tr>
+              <tr><td>Copilot</td><td class="value" id="sumCopilot"></td></tr>
+              <tr><td>Insights</td><td class="value" id="sumInsights"></td></tr>
+              <tr><td>Predictive</td><td class="value" id="sumPredictive"></td></tr>
+              <tr><td>Additional products</td><td class="value" id="sumOther"></td></tr>
+              <tr><td>Free tokens</td><td class="value" id="freeTokens"></td></tr>
+              <tr class="total"><td>Net paid tokens</td><td class="value" id="netPaidTokens"></td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Pricing assumptions in app</h2>
+          <div class="section">
+            <span class="pill">Voice Bot: 17 min/token (15-sec rounding)</span>
+            <span class="pill">Digital Bot: 51 sessions/token</span>
+            <span class="pill">Virtual Agent: 0.5 tokens/interaction</span>
+            <span class="pill">Agentic Virtual Agent: 1.2 tokens/interaction</span>
+            <span class="pill">Agent Copilot: 40 named / 60 concurrent</span>
+            <span class="pill">Speech and Text Analytics: 30 named / 45 concurrent</span>
+            <span class="pill">AI Summary / Insights: 50 per token</span>
+            <span class="pill">AI Scoring: 20 per token</span>
+            <span class="pill">AI Translate: 2 per token</span>
+            <span class="pill">Messaging / Social: 400 per token</span>
+            <span class="pill">Genesys Cloud Copilot: 20 actions/token</span>
+            <span class="pill">Predictive Engagement: no charge</span>
+            <span class="pill">Predictive routing: 17 routes/token</span>
+            <span class="pill">Free tokens: 250 named / 350 concurrent</span>
+            <span class="pill">Month-to-month: $1/token (assumption)</span>
+            <div class="foot">
+              Rates per the Genesys Cloud tokens model article (updated 2026-10-21). Guides no longer incur token charges. The $/token rate is not in that article; confirm in the Genesys Cloud pricing hub.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Scenario JSON</h2>
+          <div class="section">
+            <label for="scenarioName">Scenario name</label>
+            <input id="scenarioName" type="text" value="My Scenario">
+            <div class="grid-2" style="margin-top: 12px;">
+              <div>
+                <label for="customerName">Customer name (printed form)</label>
+                <input id="customerName" type="text" placeholder="Customer name">
+              </div>
+              <div>
+                <label for="preparedBy">Prepared by</label>
+                <input id="preparedBy" type="text" placeholder="Your name">
+              </div>
+            </div>
+            <div class="foot">
+              Save stores the scenario in your browser and keeps the latest saved JSON available for download.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="printReport" aria-hidden="true"></div>
+
+  <script>
+  (function (global) {
+    const PRICING = {
+      voiceBotMinutesPerToken: 17,
+      voiceRoundingSeconds: 15,
+      digitalBotSessionsPerToken: 51,
+      virtualAgentTokensPerInteraction: 0.5,
+      agenticVirtualAgentTokensPerInteraction: 1.2,
+      copilotNamedTokensPerUser: 40,
+      copilotConcurrentTokensPerUser: 60,
+      staNamedTokensPerUser: 30,
+      staConcurrentTokensPerUser: 45,
+      aiSummaryPerToken: 50,
+      aiInsightsPerToken: 50,
+      aiScoringPerToken: 20,
+      aiTranslatePerToken: 2,
+      predictiveRoutingRoutesPerToken: 17,
+      messagingPerToken: 400,
+      socialPostsPerToken: 400,
+      socialResponsesPerToken: 400,
+      gcCopilotActionsPerToken: 20,
+      freeTokensNamedOrg: 250,
+      freeTokensConcurrentOrg: 350,
+      monthToMonthUsdPerToken: 1
+    };
+
+    const defaults = {
+      ivrCallsPerMonth: 0,
+      ivrMinutesPerCall: 1,
+      ivrReplacePct: 100,
+      ivrVoiceBotPct: 100,
+      ivrVirtualAgentPct: 0,
+      ivrAgenticVirtualAgentPct: 0,
+      chatSessionsPerMonth: 0,
+      chatAverageLength: 5.31,
+      chatReplacePct: 100,
+      chatDigitalBotPct: 100,
+      chatVirtualAgentPct: 0,
+      chatAgenticVirtualAgentPct: 0,
+      copilotNamedUsers: 0,
+      copilotConcurrentUsers: 0,
+      insightsSummaryPct: 0,
+      insightsInsightsPct: 0,
+      insightsScoringPct: 0,
+      insightsTranslatePct: 0,
+      predictiveEvents: 0,
+      predictiveRoutes: 0,
+      staNamedUsers: 0,
+      staConcurrentUsers: 0,
+      gcCopilotActions: 0,
+      messagingVolume: 0,
+      socialPosts: 0,
+      socialResponses: 0,
+      freeTokenMode: 'none'
+    };
+
+    const mixGroups = [
+      ['ivrVoiceBotPct', 'ivrVirtualAgentPct', 'ivrAgenticVirtualAgentPct'],
+      ['chatDigitalBotPct', 'chatVirtualAgentPct', 'chatAgenticVirtualAgentPct']
+    ];
+
+    function safeNumber(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    function pct(value) { return safeNumber(value) / 100; }
+    function divide(n, d) {
+      const nn = safeNumber(n), dd = safeNumber(d);
+      return dd === 0 ? 0 : nn / dd;
+    }
+    function roundUp(value) {
+      if (!Number.isFinite(value)) return 0;
+      return Math.ceil(Math.round(value * 1e9) / 1e9);
+    }
+    function getFreeTokens(mode) {
+      if (mode === 'named') return PRICING.freeTokensNamedOrg;
+      if (mode === 'concurrent') return PRICING.freeTokensConcurrentOrg;
+      return 0;
+    }
+    // Scale a mix down proportionally if it totals more than 100%.
+    function normalizeMix(values) {
+      const v = values.map(function (x) { return Math.max(0, safeNumber(x)); });
+      const total = v.reduce(function (a, b) { return a + b; }, 0);
+      if (total > 100) return v.map(function (x) { return x * 100 / total; });
+      return v;
+    }
+
+    function compute(state) {
+      const s = { ...defaults, ...state };
+
+      // IVR
+      const ivrTotalMinutes = s.ivrCallsPerMonth * s.ivrMinutesPerCall;
+      const ivrCallsToReplace = s.ivrCallsPerMonth * pct(s.ivrReplacePct);
+      const ivrMinutesToReplace = ivrCallsToReplace * s.ivrMinutesPerCall;
+      const ivrMix = normalizeMix([s.ivrVoiceBotPct, s.ivrVirtualAgentPct, s.ivrAgenticVirtualAgentPct]);
+      const ivrMixRemaining = Math.max(0, 100 - ivrMix.reduce(function (a, b) { return a + b; }, 0));
+      const stepsPerMin = 60 / PRICING.voiceRoundingSeconds;
+      const roundedMinutesPerCall = roundUp(s.ivrMinutesPerCall * stepsPerMin) / stepsPerMin;
+      const ivrVoiceBotTokens = roundUp((ivrCallsToReplace * pct(ivrMix[0]) * roundedMinutesPerCall) / PRICING.voiceBotMinutesPerToken);
+      const ivrVirtualAgentTokens = roundUp(ivrCallsToReplace * pct(ivrMix[1]) * PRICING.virtualAgentTokensPerInteraction);
+      const ivrAgenticVirtualAgentTokens = roundUp(ivrCallsToReplace * pct(ivrMix[2]) * PRICING.agenticVirtualAgentTokensPerInteraction);
+      const ivrTotalTokens = ivrVoiceBotTokens + ivrVirtualAgentTokens + ivrAgenticVirtualAgentTokens;
+
+      // Digital chat
+      const chatToReplace = s.chatSessionsPerMonth * pct(s.chatReplacePct);
+      const chatTurnsToReplace = chatToReplace * s.chatAverageLength;
+      const chatMix = normalizeMix([s.chatDigitalBotPct, s.chatVirtualAgentPct, s.chatAgenticVirtualAgentPct]);
+      const chatMixRemaining = Math.max(0, 100 - chatMix.reduce(function (a, b) { return a + b; }, 0));
+      const chatDigitalBotTokens = roundUp((chatToReplace * pct(chatMix[0])) / PRICING.digitalBotSessionsPerToken);
+      const chatVirtualAgentTokens = roundUp(chatToReplace * pct(chatMix[1]) * PRICING.virtualAgentTokensPerInteraction);
+      const chatAgenticVirtualAgentTokens = roundUp(chatToReplace * pct(chatMix[2]) * PRICING.agenticVirtualAgentTokensPerInteraction);
+      const chatTotalTokens = chatDigitalBotTokens + chatVirtualAgentTokens + chatAgenticVirtualAgentTokens;
+
+      // Copilot
+      const copilotNamedTokens = s.copilotNamedUsers * PRICING.copilotNamedTokensPerUser;
+      const copilotConcurrentTokens = s.copilotConcurrentUsers * PRICING.copilotConcurrentTokensPerUser;
+      const copilotTotalTokens = copilotNamedTokens + copilotConcurrentTokens;
+
+      // Insights
+      const insightsBaseInteractions = s.ivrCallsPerMonth + ((s.chatSessionsPerMonth * s.chatAverageLength) - chatTurnsToReplace);
+      const insightsSummaryTokens = roundUp((insightsBaseInteractions * pct(s.insightsSummaryPct)) / PRICING.aiSummaryPerToken);
+      const insightsInsightsTokens = roundUp((insightsBaseInteractions * pct(s.insightsInsightsPct)) / PRICING.aiInsightsPerToken);
+      const insightsScoringTokens = roundUp((insightsBaseInteractions * pct(s.insightsScoringPct)) / PRICING.aiScoringPerToken);
+      const insightsTranslateTokens = roundUp((insightsBaseInteractions * pct(s.insightsTranslatePct)) / PRICING.aiTranslatePerToken);
+      const insightsTotalTokens = insightsSummaryTokens + insightsInsightsTokens + insightsScoringTokens + insightsTranslateTokens;
+
+      // Predictive
+      const predictiveEngagementTokens = 0;
+      const predictiveRoutingTokens = roundUp(s.predictiveRoutes / PRICING.predictiveRoutingRoutesPerToken);
+      const predictiveTotalTokens = predictiveEngagementTokens + predictiveRoutingTokens;
+
+      // Additional products
+      const staNamedTokens = s.staNamedUsers * PRICING.staNamedTokensPerUser;
+      const staConcurrentTokens = s.staConcurrentUsers * PRICING.staConcurrentTokensPerUser;
+      const staTotalTokens = staNamedTokens + staConcurrentTokens;
+      const gcCopilotTokens = roundUp(s.gcCopilotActions / PRICING.gcCopilotActionsPerToken);
+      const gcCopilotTotalTokens = gcCopilotTokens;
+      const messagingTokens = roundUp(s.messagingVolume / PRICING.messagingPerToken);
+      const socialPostTokens = roundUp(s.socialPosts / PRICING.socialPostsPerToken);
+      const socialResponseTokens = roundUp(s.socialResponses / PRICING.socialResponsesPerToken);
+      const messagingTotalTokens = messagingTokens + socialPostTokens + socialResponseTokens;
+      const otherTotalTokens = staTotalTokens + gcCopilotTotalTokens + messagingTotalTokens;
+
+      const grossTotal = ivrTotalTokens + chatTotalTokens + copilotTotalTokens + insightsTotalTokens + predictiveTotalTokens + otherTotalTokens;
+      const freeTokens = getFreeTokens(s.freeTokenMode);
+      const netPaidTokens = Math.max(grossTotal - freeTokens, 0);
+      const estimatedMonthlyUsd = netPaidTokens * PRICING.monthToMonthUsdPerToken;
+
+      return {
+        ivrTotalMinutes, ivrCallsToReplace, ivrMinutesToReplace, ivrMixRemaining,
+        ivrVoiceBotTokens, ivrVirtualAgentTokens, ivrAgenticVirtualAgentTokens, ivrTotalTokens,
+        chatToReplace, chatTurnsToReplace, chatMixRemaining,
+        chatDigitalBotTokens, chatVirtualAgentTokens, chatAgenticVirtualAgentTokens, chatTotalTokens,
+        copilotNamedTokens, copilotConcurrentTokens, copilotTotalTokens,
+        insightsSummaryTokens, insightsInsightsTokens, insightsScoringTokens, insightsTranslateTokens, insightsTotalTokens,
+        predictiveEngagementTokens, predictiveRoutingTokens, predictiveTotalTokens,
+        staNamedTokens, staConcurrentTokens, staTotalTokens, gcCopilotTokens, gcCopilotTotalTokens,
+        messagingTokens, socialPostTokens, socialResponseTokens, messagingTotalTokens, otherTotalTokens,
+        grossTotal, freeTokens, netPaidTokens, estimatedMonthlyUsd
+      };
+    }
+
+    const fields = Object.keys(defaults);
+
+    const outputMap = [
+      'ivrTotalMinutes','ivrCallsToReplace','ivrMinutesToReplace','ivrVoiceBotTokens','ivrVirtualAgentTokens','ivrAgenticVirtualAgentTokens','ivrTotalTokens',
+      'chatToReplace','chatTurnsToReplace','chatDigitalBotTokens','chatVirtualAgentTokens','chatAgenticVirtualAgentTokens','chatTotalTokens',
+      'copilotNamedTokens','copilotConcurrentTokens','copilotTotalTokens','insightsSummaryTokens','insightsInsightsTokens','insightsScoringTokens','insightsTranslateTokens','insightsTotalTokens',
+      'predictiveEngagementTokens','predictiveRoutingTokens','predictiveTotalTokens',
+      'staNamedTokens','staConcurrentTokens','staTotalTokens','gcCopilotTokens','gcCopilotTotalTokens',
+      'messagingTokens','socialPostTokens','socialResponseTokens','messagingTotalTokens',
+      'grossTotal','freeTokens','netPaidTokens','estimatedMonthlyUsd'
+    ];
+
+    function formatNumber(value, digits) {
+      return Number(value).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+    }
+    function formatCurrency(value) {
+      return Number(value).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+    }
+
+    function readState() {
+      const state = {};
+      fields.forEach(function (id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        state[id] = el.tagName === 'SELECT' ? el.value : safeNumber(el.value);
+      });
+      return state;
+    }
+
+    function writeState(state) {
+      fields.forEach(function (id) {
+        const el = document.getElementById(id);
+        if (!el || !(id in state)) return;
+        el.value = state[id];
+      });
+    }
+
+    // Keep each product mix at or below 100% by capping the field being edited.
+    function clampMix(id) {
+      const group = mixGroups.find(function (g) { return g.indexOf(id) !== -1; });
+      if (!group) return;
+      const el = document.getElementById(id);
+      const others = group.filter(function (g) { return g !== id; }).reduce(function (sum, g) {
+        return sum + Math.max(0, safeNumber(document.getElementById(g).value));
+      }, 0);
+      const cap = Math.max(0, 100 - others);
+      if (el.value !== '' && safeNumber(el.value) > cap) el.value = cap;
+      if (el.value !== '' && safeNumber(el.value) < 0) el.value = 0;
+    }
+
+    function render() {
+      const state = readState();
+      localStorage.setItem('genesysTokenCalculatorState', JSON.stringify(state));
+      const data = compute(state);
+
+      outputMap.forEach(function (id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (id === 'estimatedMonthlyUsd') el.textContent = formatCurrency(data[id]);
+        else if (id === 'predictiveEngagementTokens') el.textContent = '0';
+        else el.textContent = formatNumber(data[id], 2);
+      });
+
+      document.getElementById('ivrMixRemaining').textContent = formatNumber(data.ivrMixRemaining, 2) + '%';
+      document.getElementById('chatMixRemaining').textContent = formatNumber(data.chatMixRemaining, 2) + '%';
+      document.getElementById('sumIvr').textContent = formatNumber(data.ivrTotalTokens, 2);
+      document.getElementById('sumChat').textContent = formatNumber(data.chatTotalTokens, 2);
+      document.getElementById('sumCopilot').textContent = formatNumber(data.copilotTotalTokens, 2);
+      document.getElementById('sumInsights').textContent = formatNumber(data.insightsTotalTokens, 2);
+      document.getElementById('sumPredictive').textContent = formatNumber(data.predictiveTotalTokens, 2);
+      document.getElementById('sumOther').textContent = formatNumber(data.otherTotalTokens, 2);
+    }
+
+    function resetToDefaults() { writeState(defaults); render(); }
+
+    function saveScenario() {
+      const payload = {
+        name: document.getElementById('scenarioName').value || 'My Scenario',
+        savedAt: new Date().toISOString(),
+        state: readState()
+      };
+      localStorage.setItem('genesysTokenCalculatorScenario', JSON.stringify(payload, null, 2));
+      alert('Scenario saved in local storage.');
+    }
+
+    function downloadScenario() {
+      const payload = localStorage.getItem('genesysTokenCalculatorScenario') || JSON.stringify({
+        name: document.getElementById('scenarioName').value || 'My Scenario',
+        savedAt: new Date().toISOString(),
+        state: readState()
+      }, null, 2);
+      const blob = new Blob([payload], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'genesys-token-calculator-scenario.json';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function loadScenarioFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function () {
+        try {
+          const payload = JSON.parse(reader.result);
+          const state = payload.state || payload;
+          writeState({ ...defaults, ...state });
+          if (payload.name) document.getElementById('scenarioName').value = payload.name;
+          render();
+        } catch (err) {
+          alert('Could not load JSON scenario file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    function buildReport() {
+      const s = { ...defaults, ...readState() };
+      const d = compute(s);
+      const f = function (v) { return formatNumber(v, 2); };
+      const customer = document.getElementById('customerName').value.trim();
+      const preparedBy = document.getElementById('preparedBy').value.trim();
+      const freeLabel = { none: 'None', named: 'Named org (250 tokens)', concurrent: 'Concurrent org (350 tokens)' }[s.freeTokenMode];
+      const groups = [];
+      function group(title, rows) {
+        const shown = rows.filter(function (r) { return r.tokens > 0 || r.show; });
+        if (!shown.length) return;
+        groups.push({ title: title, rows: shown, subtotal: shown.reduce(function (a, r) { return a + r.tokens; }, 0) });
+      }
+
+      group('IVR replacement', [
+        { name: 'Voice Bot', basis: f(s.ivrVoiceBotPct) + '% of ' + f(d.ivrCallsToReplace) + ' deflected calls', meter: '17 min per token (15-second rounding)', tokens: d.ivrVoiceBotTokens },
+        { name: 'Virtual Agent', basis: f(s.ivrVirtualAgentPct) + '% of ' + f(d.ivrCallsToReplace) + ' deflected calls', meter: '0.5 tokens per interaction', tokens: d.ivrVirtualAgentTokens },
+        { name: 'Agentic Virtual Agent', basis: f(s.ivrAgenticVirtualAgentPct) + '% of ' + f(d.ivrCallsToReplace) + ' deflected calls', meter: '1.2 tokens per interaction', tokens: d.ivrAgenticVirtualAgentTokens }
+      ]);
+      group('Digital chat replacement', [
+        { name: 'Digital Bot', basis: f(s.chatDigitalBotPct) + '% of ' + f(d.chatToReplace) + ' replaced chats', meter: '51 sessions per token', tokens: d.chatDigitalBotTokens },
+        { name: 'Virtual Agent', basis: f(s.chatVirtualAgentPct) + '% of ' + f(d.chatToReplace) + ' replaced chats', meter: '0.5 tokens per interaction', tokens: d.chatVirtualAgentTokens },
+        { name: 'Agentic Virtual Agent', basis: f(s.chatAgenticVirtualAgentPct) + '% of ' + f(d.chatToReplace) + ' replaced chats', meter: '1.2 tokens per interaction', tokens: d.chatAgenticVirtualAgentTokens }
+      ]);
+      group('Agent Copilot', [
+        { name: 'Named users', basis: f(s.copilotNamedUsers) + ' users', meter: '40 tokens per user', tokens: d.copilotNamedTokens },
+        { name: 'Concurrent users', basis: f(s.copilotConcurrentUsers) + ' users', meter: '60 tokens per user', tokens: d.copilotConcurrentTokens }
+      ]);
+      group('AI Insights', [
+        { name: 'AI Summary', basis: f(s.insightsSummaryPct) + '% of eligible interactions', meter: '50 per token', tokens: d.insightsSummaryTokens },
+        { name: 'AI Insights', basis: f(s.insightsInsightsPct) + '% of eligible interactions', meter: '50 per token', tokens: d.insightsInsightsTokens },
+        { name: 'AI Scoring', basis: f(s.insightsScoringPct) + '% of eligible interactions', meter: '20 evaluations per token', tokens: d.insightsScoringTokens },
+        { name: 'AI Translate', basis: f(s.insightsTranslatePct) + '% of eligible interactions', meter: '2 translations per token', tokens: d.insightsTranslateTokens }
+      ]);
+      group('Predictive', [
+        { name: 'Predictive Engagement', basis: f(s.predictiveEvents) + ' events', meter: 'No token charge', tokens: 0, show: s.predictiveEvents > 0 },
+        { name: 'Predictive routing', basis: f(s.predictiveRoutes) + ' routes', meter: '17 routes per token', tokens: d.predictiveRoutingTokens }
+      ]);
+      group('Additional products', [
+        { name: 'Speech and Text Analytics (named)', basis: f(s.staNamedUsers) + ' users', meter: '30 tokens per user', tokens: d.staNamedTokens },
+        { name: 'Speech and Text Analytics (concurrent)', basis: f(s.staConcurrentUsers) + ' users', meter: '45 tokens per user', tokens: d.staConcurrentTokens },
+        { name: 'Genesys Cloud Copilot', basis: f(s.gcCopilotActions) + ' AI actions', meter: '20 actions per token', tokens: d.gcCopilotTokens },
+        { name: 'Direct messaging', basis: f(s.messagingVolume) + ' messages', meter: '400 messages per token', tokens: d.messagingTokens },
+        { name: 'Social post ingestions', basis: f(s.socialPosts) + ' posts', meter: '400 per channel per token', tokens: d.socialPostTokens },
+        { name: 'Social post responses', basis: f(s.socialResponses) + ' messages', meter: '400 per channel per token', tokens: d.socialResponseTokens }
+      ]);
+
+      const assumptions = [];
+      if (s.ivrCallsPerMonth > 0) {
+        assumptions.push(['IVR calls per month', f(s.ivrCallsPerMonth)]);
+        assumptions.push(['Average minutes in IVR per call', f(s.ivrMinutesPerCall)]);
+        assumptions.push(['Calls deflected to bots', f(s.ivrReplacePct) + '% (' + f(d.ivrCallsToReplace) + ' calls)']);
+      }
+      if (s.chatSessionsPerMonth > 0) {
+        assumptions.push(['Chat sessions per month', f(s.chatSessionsPerMonth)]);
+        assumptions.push(['Chats replaced by bots', f(s.chatReplacePct) + '% (' + f(d.chatToReplace) + ' sessions)']);
+      }
+      assumptions.push(['Free token allocation', freeLabel]);
+
+      let html = '<div class="pr-head"><div><p class="pr-eyebrow">AI-Powered Experience Orchestration</p>' +
+        '<h1>Genesys Cloud&trade; AI Experience<br>Token Estimate</h1></div>' +
+        '<div class="pr-meta">' +
+        (customer ? '<div><strong>Customer:</strong> ' + esc(customer) + '</div>' : '') +
+        (preparedBy ? '<div><strong>Prepared by:</strong> ' + esc(preparedBy) + '</div>' : '') +
+        '<div><strong>Date:</strong> ' + esc(new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })) + '</div>' +
+        '</div></div>';
+
+      html += '<h2>Planning assumptions</h2><table>' + assumptions.map(function (a) {
+        return '<tr><td>' + esc(a[0]) + '</td><td class="num">' + esc(a[1]) + '</td></tr>';
+      }).join('') + '</table>';
+
+      html += '<h2>Estimated monthly token consumption</h2>';
+      if (!groups.length) {
+        html += '<p class="pr-note">No token consumption entered.</p>';
+      } else {
+        html += '<table><tr><th>Product</th><th>Basis</th><th>Metering</th><th>Tokens</th></tr>';
+        groups.forEach(function (g) {
+          html += '<tr class="sub"><td colspan="3">' + esc(g.title) + '</td><td class="num">' + f(g.subtotal) + '</td></tr>';
+          g.rows.forEach(function (r) {
+            html += '<tr><td>' + esc(r.name) + '</td><td class="dim">' + esc(r.basis) + '</td><td class="dim">' + esc(r.meter) + '</td><td class="num">' + f(r.tokens) + '</td></tr>';
+          });
+        });
+        html += '</table>';
+      }
+
+      html += '<div class="pr-total">' +
+        '<div><div class="lbl">Gross tokens per month</div><div class="big">' + f(d.grossTotal) + '</div></div>' +
+        '<div><div class="lbl">Free allocation</div><div class="big" style="color:var(--navy)">' + f(d.freeTokens) + '</div></div>' +
+        '<div><div class="lbl">Net paid tokens per month</div><div class="big">' + f(d.netPaidTokens) + '</div></div>' +
+        '<div><div class="lbl">Estimated month-to-month</div><div class="big">' + esc(formatCurrency(d.estimatedMonthlyUsd)) + '</div></div></div>';
+
+      html += '<p class="pr-note">This is a planning estimate based on the Genesys Cloud tokens model (help.genesys.cloud). Tokens renew monthly and do not carry over. When an interaction uses multiple AI resources, billing is based on the highest-tier resource used. Actual consumption, rates and pricing are determined by your order form and the Genesys Cloud pricing hub. Genesys&reg; and Genesys Cloud&trade; are trademarks of Genesys.</p>';
+      html += '<div class="pr-sign"><div>Customer acknowledgment</div><div>Date</div></div>';
+
+      document.getElementById('printReport').innerHTML = html;
+    }
+
+    document.getElementById('printBtn').addEventListener('click', function () {
+      buildReport();
+      window.print();
+    });
+    window.addEventListener('beforeprint', buildReport);
+
+    fields.forEach(function (id) {
+      const el = document.getElementById(id);
+      el.addEventListener('input', function () { clampMix(id); render(); });
+      el.addEventListener('change', function () { clampMix(id); render(); });
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', resetToDefaults);
+    document.getElementById('saveScenarioBtn').addEventListener('click', saveScenario);
+    document.getElementById('downloadScenarioBtn').addEventListener('click', downloadScenario);
+    document.getElementById('uploadScenarioInput').addEventListener('change', function (event) {
+      loadScenarioFile(event.target.files[0]);
+      event.target.value = '';
+    });
+
+    const savedState = localStorage.getItem('genesysTokenCalculatorState');
+    if (savedState) {
+      try { writeState({ ...defaults, ...JSON.parse(savedState) }); }
+      catch (err) { writeState(defaults); }
+    } else {
+      writeState(defaults);
+    }
+    render();
+
+    global.GenesysTokenCalculatorStandalone = { PRICING, defaults, compute };
+  })(window);
+  </script>
+</body>
+</html>
